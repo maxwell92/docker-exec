@@ -8,6 +8,7 @@ function ensure_started_container {
     output=`docker start "$1"`
     echo "[docker start] $output"
   fi
+  running=1
 }
 
 function setup_signals {
@@ -19,7 +20,7 @@ function setup_signals {
 }
 
 function handle_signal {
-  echo "[docker-exec] received "$2""
+  echo "[docker-exec] received $2"
   case "$2" in
     SIGINT)
       output=`docker stop -t 5 "$1"`
@@ -32,15 +33,18 @@ function handle_signal {
       running=0
       ;;
     SIGHUP)
-      output=`docker restart -t 5 ""$1""`
+      output=`docker restart -t 5 "$1"`
       echo "[docker restart] $output"
-      kill "$logger_pid" 2> /dev/null
+
+      # restart logging
       docker attach "$1" &
+      kill "$logger_pid" 2> /dev/null
+      logger_pid="$!"
       ;;
   esac
 }
 
-running=1
+running=0
 
 setup_signals "$1" "handle_signal" SIGINT SIGTERM SIGHUP
 
