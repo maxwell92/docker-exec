@@ -1,0 +1,53 @@
+#!/bin/bash
+
+function ensure_started_container {
+  if docker ps -q | grep $1; then
+    echo "[docker start] skipped, already started"
+  else
+    echo "[docker start] $(docker start $1)"
+  fi
+}
+
+function setup_signals {
+  cid=$1; shift
+  handler=$1; shift
+  for sig; do
+    trap "$handler $cid $sig" $sig
+  done
+}
+
+function handle_signal {
+  echo "[docker-exec] received $2"
+  case $2 in
+    SIGINT)
+      running=0
+      echo "[docker stop] $(docker stop -t 5 $1)"
+      ;;
+    SIGTERM)
+      running=0
+      echo "[docker stop] $(docker stop -t 5 $1)"
+      ;;
+    SIGHUP)
+      echo `docker restart -t 5 $1`
+      echo "[docker restart] $(docker restart -t 5 $1)"
+      ;;
+  esac
+}
+
+running=1
+
+setup_signals $1 "handle_signal" SIGINT SIGTERM SIGHUP SIGCHLD
+
+ensure_started_container $1
+docker attach $1 &
+
+while true; do
+  if [ $running -eq 1 ]; then
+    sleep 0.1
+  else
+    break
+  fi
+done
+
+exit_code=`docker wait $1`
+exit $exit_code
