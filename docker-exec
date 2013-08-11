@@ -1,53 +1,61 @@
 #!/bin/bash
 
 function ensure_started_container {
-  if docker ps -q | grep $1; then
-    echo "[docker start] skipped, already started"
+  exists=`docker ps -q | grep $1`
+  if [ "$?" = "0" ] ; then
+    echo "[docker-exec] skipping docker start, already started"
   else
-    echo "[docker start] $(docker start $1)"
+    output=`docker start "$1"`
+    echo "[docker start] $output"
   fi
 }
 
 function setup_signals {
-  cid=$1; shift
-  handler=$1; shift
+  cid="$1"; shift
+  handler="$1"; shift
   for sig; do
-    trap "$handler $cid $sig" $sig
+    trap "$handler '$cid' '$sig'" "$sig"
   done
 }
 
 function handle_signal {
-  echo "[docker-exec] received $2"
-  case $2 in
+  echo "[docker-exec] received "$2""
+  case "$2" in
     SIGINT)
+      output=`docker stop -t 5 "$1"`
+      echo "[docker stop] $output"
       running=0
-      echo "[docker stop] $(docker stop -t 5 $1)"
       ;;
     SIGTERM)
+      output=`docker stop -t 5 "$1"`
+      echo "[docker stop] $output"
       running=0
-      echo "[docker stop] $(docker stop -t 5 $1)"
       ;;
     SIGHUP)
-      echo `docker restart -t 5 $1`
-      echo "[docker restart] $(docker restart -t 5 $1)"
+      output=`docker restart -t 5 ""$1""`
+      echo "[docker restart] $output"
+      kill "$logger_pid" 2> /dev/null
+      docker attach "$1" &
       ;;
   esac
 }
 
 running=1
 
-setup_signals $1 "handle_signal" SIGINT SIGTERM SIGHUP
+setup_signals "$1" "handle_signal" SIGINT SIGTERM SIGHUP
 
-ensure_started_container $1
-docker attach $1 &
+ensure_started_container "$1"
+
+docker attach "$1" &
+logger_pid="$!"
 
 while true; do
-  if [ $running -eq 1 ]; then
-    sleep 0.1
+  if [ "$running" = "1" ]; then
+    sleep 1
   else
     break
   fi
 done
 
-exit_code=`docker wait $1`
-exit $exit_code
+exit_code=`docker wait "$1"`
+exit "$exit_code"
