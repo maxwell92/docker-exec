@@ -36,7 +36,7 @@ function handle_signal {
 
 running=1
 
-setup_signals $1 "handle_signal" SIGINT SIGTERM SIGHUP SIGCHLD
+setup_signals $1 "handle_signal" SIGINT SIGTERM SIGHUP
 
 ensure_started_container $1
 docker attach $1 &
