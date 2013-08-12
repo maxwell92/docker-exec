@@ -32,6 +32,18 @@ kill -TERM $!
 
 `docker-exec` will return with the container command's exit code.
 
+With Runit, your `run` script would look like this:
+
+```sh
+#!/bin/sh
+exec 2>&1
+
+command='echo "started"; while true; do date; sleep 1; done'
+cid=$(docker run -d ubuntu /bin/sh -c "$command")
+
+exec docker-exec $cid
+```
+
 
 Known issues
 ------------
