@@ -16,6 +16,8 @@ Official signal handling support for Docker is in the works:
 Usage
 -----
 
+*Hint: You can simply paste this code into your Bash session.*
+
 ```sh
 # run a command that periodically prints
 command='echo "started"; while true; do date; sleep 1; done'
