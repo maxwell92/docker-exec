@@ -9,8 +9,18 @@ that in order to supervise containers using [Runit](http://smarden.org/runit/).
 In addition to that, I wanted to learn a little more about UNIX signals, and
 Bash scripting.
 
-Official signal handling support for Docker is in the works:
-[dotcloud/docker#1249](https://github.com/dotcloud/docker/pull/1249)
+**Since Docker 0.6**, this script is obsolete because interactive mode now
+correctly passes SIGINT and SIGHUP to the child process within the container.
+
+With Runit, use the following `run` script.
+
+```sh
+#!/bin/bash
+exec 2>&1
+
+command='echo "started"; while true; do date; sleep 1; done'
+exec docker run -i ubuntu /bin/sh -c "$command"
+```
 
 
 Usage
